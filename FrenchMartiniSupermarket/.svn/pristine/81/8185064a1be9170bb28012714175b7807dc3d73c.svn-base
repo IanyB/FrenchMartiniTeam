@@ -1,0 +1,21 @@
+﻿using OpenAccessModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+internal class SupermarketClient
+{
+    private static void Main()
+    {
+        using (SupermarketModel context = new SupermarketModel())
+        {
+            Console.WriteLine("Products:");
+            foreach (var product in context.Products)
+            {
+                Console.WriteLine(product.ProductName);
+            }
+        }
+    }
+}

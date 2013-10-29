@@ -1,0 +1,89 @@
+﻿using System;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using EntityFrameworkModels;
+
+namespace XmlLib
+{
+    /// <summary>
+    /// Base class for XML based reports for supormarket DB
+    /// </summary>
+    public static class Reporter
+    {
+        public static void CreateSalesReport()
+        {
+            /*
+            NorthwindEntities2 northwindEntities = new NorthwindEntities2();
+
+            var query =
+            from customer in northwindEntities.Customers
+            join supplier in northwindEntities.Suppliers
+            on customer.Country equals supplier.Country
+            group customer by customer.Country into groupedCustomers
+            select new
+            {
+                Country = groupedCustomers.Key,
+                Info = groupedCustomers,
+            };
+            */
+
+            SupermarketEntities supermarkets = new SupermarketEntities();
+
+
+            var queryResult =
+                from vendors in supermarkets.Vendors
+                join products in supermarkets.Products
+                on vendors.VendorId equals products.VendorId
+                join sales in supermarkets.Sales
+                on products.ProductId equals sales.ProductId
+                join reports in supermarkets.Reports
+                on sales.ReportId equals reports.ReportId
+                group vendors by new { vendors.VendorName, reports.ReportDate }
+                    into report
+                    select new
+                    {
+                        Vendor = report.Key.VendorName,
+                        ReportDate = report.Key.ReportDate,
+                        //ReportsByDates = report,
+                        //TotalSum = report.Key.sales.ProductTotalSum.Sum(),
+                    };
+            
+
+            string fileName = "../../customers.xml";
+            Encoding encoding = Encoding.GetEncoding("windows-1251");
+            using (XmlTextWriter writer = new XmlTextWriter(fileName, encoding))
+            {
+                writer.Formatting = Formatting.Indented;
+                writer.IndentChar = '\t';
+                writer.Indentation = 1;
+
+                writer.WriteStartDocument();
+                writer.WriteStartElement("sales");
+
+                foreach (var category in queryResult)
+                {
+                    Console.WriteLine(category.Vendor);
+                    Console.WriteLine("--- " + category.ReportDate);
+                    /*
+                    writer.WriteStartElement("sale");
+                    writer.WriteAttributeString("vendor", category.Vendor);
+
+                    foreach (var row in category.ReportsByDates)
+                    {
+                        writer.WriteStartElement("summary");
+                        writer.WriteAttributeString("date", row.);
+                        writer.WriteAttributeString("total-sum", row.City);
+                        writer.WriteEndElement();
+                    }
+
+                    writer.WriteEndElement();
+                     * */
+                }
+
+
+                writer.WriteEndDocument();
+            }
+        }
+    }
+}

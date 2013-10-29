@@ -1,0 +1,44 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using MongoDB;
+using EntityFrameworkModels;
+using MongoDB.Driver;
+
+namespace JSONProductReports
+{
+    public class InsertInMongoDB<T>
+    {
+        public void InsertMongoDB(ICollection<T> jsonObjects, string databaseName)
+        {
+            var connectionString = "mongodb://localhost";
+            var mongoclient = new MongoClient(connectionString);
+            var server = mongoclient.GetServer();
+            var database = server.GetDatabase(databaseName);
+            var collection = database.GetCollection(databaseName);
+
+           
+            foreach(var obj in jsonObjects)
+            {
+                collection.Insert(obj);
+            }
+        }
+
+        public void ExportMongoDB(string databaseName)
+        {
+            var connectionString = "mongodb://localhost";
+            var mongoclient = new MongoClient(connectionString);
+            var server = mongoclient.GetServer();
+            var database = server.GetDatabase(databaseName);
+            var collection = database.GetCollection(databaseName);
+
+            var allEntries = collection.FindAll();
+            foreach (var entry in allEntries)
+            {
+                Console.WriteLine(entry);
+            }
+        }
+    }
+}

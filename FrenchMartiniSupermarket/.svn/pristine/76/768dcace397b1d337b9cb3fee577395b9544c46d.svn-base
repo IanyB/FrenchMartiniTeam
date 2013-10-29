@@ -1,0 +1,76 @@
+﻿using EntityFrameworkModels;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml;
+
+namespace XmlLib
+{
+    public static class Reader
+    {
+        /// <summary>
+        /// Method for extracting expenses reports in XML format
+        /// </summary>
+        /// <param name="filePath">Filepath for the .xml file</param>
+        public static LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>> 
+            ReadVendorMonthlyExpenses(string filePath)
+        {
+            XmlReader reader = XmlReader.Create(filePath);
+
+            LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>> expenses =
+                new LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>>();
+
+            using (var msSQLServerContext = new SupermarketEntities())
+            {
+                using (reader)
+                {
+                    while (reader.Read())
+                    {
+                        int vendorId = 0;
+
+                        //Insert a new vendor
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "sale")
+                        {
+                            string vendorName = reader.GetAttribute("vendor");
+                            vendorId = msSQLServerContext.Vendors.FirstOrDefault( v => v.VendorName == vendorName).VendorId;
+
+                            expenses.AddFirst(
+                                new KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>(
+                                    vendorName,
+                                    new LinkedList<KeyValuePair<string, decimal>>()));
+                        }
+
+                        //Insert Expenses
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "expenses")
+                        {
+                            string month = reader.GetAttribute("month");
+                            DateTime monthAsDate = DateTime.ParseExact(month, "MMM-yyyy", CultureInfo.InvariantCulture);
+
+                            decimal amount = reader.ReadElementContentAsDecimal();
+                            
+                            expenses.First.Value.Value.AddFirst(
+                                new KeyValuePair<string, decimal>(
+                                    month,
+                                    amount));
+
+                            var vendorMonthlyExpense = new VendorExpense
+                            {
+                                        VendorId = vendorId,
+                                        Month = monthAsDate.Month,
+                                        Year = monthAsDate.Year,
+                                        Amount = amount
+                            };
+
+                            msSQLServerContext.VendorExpenses.Add(vendorMonthlyExpense);
+                        }
+                    }
+                }
+
+                msSQLServerContext.SaveChanges();
+            }
+            
+            return expenses;
+        }
+    }
+}

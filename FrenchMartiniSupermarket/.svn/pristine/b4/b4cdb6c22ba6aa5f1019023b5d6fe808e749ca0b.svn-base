@@ -1,0 +1,36 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ExcelExportFiles
+{
+    public static class ExcelManager
+    {
+        public static DataTable GetContents(string filePath)
+        {
+            DataTable contents = new DataTable("newtable");
+
+            string connectionString = @"Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" +
+                filePath +
+                ";Extended Properties=Excel 12.0;";
+
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                connection.Open();
+
+                string selectSql = @"SELECT * FROM [Sales$B1:E]";
+
+                using (OleDbDataAdapter adapter = new OleDbDataAdapter(selectSql, connection))
+                {
+                    adapter.Fill(contents);
+                }
+            }
+
+            return contents;
+        }
+    }
+}

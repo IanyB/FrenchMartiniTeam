@@ -1,0 +1,183 @@
+﻿using System.Collections.Generic;
+using System.IO;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using System.Reflection;
+using EntityFrameworkModels;
+using System.Linq;
+
+namespace PDFConverter
+{
+    public static class PDFConverter
+    {
+        public static void GeneratePDFAggregatedSalesReport()
+        {
+            string executionFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string salesReportFile = Path.Combine(executionFolder, "Sales-Report.pdf");
+
+            var fs = new FileStream(salesReportFile, FileMode.Create);
+
+            var document = new Document(PageSize.A4, 25, 25, 30, 30);
+
+            PdfWriter writer = PdfWriter.GetInstance(document, fs);
+            document.Open();
+
+            var table = new PdfPTable(5);
+            var cellTitle = new PdfPCell(new Phrase("Aggregated Sales Report", new Font(Font.HELVETICA, 13f, Font.BOLD)))
+            {
+                Colspan = 5,
+                HorizontalAlignment = 1
+            };
+            cellTitle.PaddingBottom = 10f;
+            cellTitle.PaddingLeft = 10f;
+            cellTitle.PaddingTop = 4f;
+            table.AddCell(cellTitle);
+
+            var cellDate = new PdfPCell(new Phrase("Date:")) { Colspan = 5, HorizontalAlignment = 0 };
+            cellDate.BackgroundColor = new Color(217, 217, 217);
+            cellDate.PaddingBottom = 10f;
+            cellDate.PaddingLeft = 10f;
+            cellDate.PaddingTop = 4f;
+            table.AddCell(cellDate);
+
+            var cellHeaderOne = new PdfPCell(new Phrase("Product", new Font(Font.HELVETICA, 12f, Font.BOLD)));
+            cellHeaderOne.BackgroundColor = new Color(217, 217, 217);
+            cellHeaderOne.PaddingBottom = 10f;
+            cellHeaderOne.PaddingLeft = 10f;
+            cellHeaderOne.PaddingTop = 4f;
+            table.AddCell(cellHeaderOne);
+
+            var cellHeaderTwo = new PdfPCell(new Phrase("Quantity", new Font(Font.HELVETICA, 12f, Font.BOLD)));
+            cellHeaderTwo.BackgroundColor = new Color(217, 217, 217);
+            cellHeaderTwo.PaddingBottom = 10f;
+            cellHeaderTwo.PaddingLeft = 10f;
+            cellHeaderTwo.PaddingTop = 4f;
+            table.AddCell(cellHeaderTwo);
+
+            var cellHeaderThree = new PdfPCell(new Phrase("Unit Price", new Font(Font.HELVETICA, 12f, Font.BOLD)));
+            cellHeaderThree.BackgroundColor = new Color(217, 217, 217);
+            cellHeaderThree.PaddingBottom = 10f;
+            cellHeaderThree.PaddingLeft = 10f;
+            cellHeaderThree.PaddingTop = 4f;
+            table.AddCell(cellHeaderThree);
+
+            var cellHeaderFour = new PdfPCell(new Phrase("Location", new Font(Font.HELVETICA, 12f, Font.BOLD)));
+            cellHeaderFour.BackgroundColor = new Color(217, 217, 217);
+            cellHeaderFour.PaddingBottom = 10f;
+            cellHeaderFour.PaddingLeft = 10f;
+            cellHeaderFour.PaddingTop = 4f;
+            table.AddCell(cellHeaderFour);
+
+            var cellHeaderFive = new PdfPCell(new Phrase("Sum", new Font(Font.HELVETICA, 12f, Font.BOLD)));
+            cellHeaderFive.BackgroundColor = new Color(217, 217, 217);
+            cellHeaderFive.PaddingBottom = 10f;
+            cellHeaderFive.PaddingLeft = 10f;
+            cellHeaderFive.PaddingTop = 4f;
+            table.AddCell(cellHeaderFive);
+
+            using (var msSQLServerContext = new SupermarketEntities())
+            {
+                var sales =
+                    from product in msSQLServerContext.Products
+                    join unit in msSQLServerContext.Units
+                    on product.UnitId equals unit.UnitId
+                    join sale in msSQLServerContext.Sales
+                    on product.ProductId equals sale.ProductId
+                    join report in msSQLServerContext.Reports
+                    on sale.ReportId equals report.ReportId
+                    join localShop in msSQLServerContext.LocalShops
+                    on report.LocalShopId equals localShop.LocalShopId
+                    select new
+                    {
+                        ProductName = product.ProductName,
+                        ProductQuantity = sale.ProductQuantity,
+                        Units = unit.UnitName,
+                        ProductUnitPrice = sale.ProductUnitPrice,
+                        LocalShopName = localShop.LocalShopName,
+                        SaleDate = report.ReportDate,
+                        TotalSum = sale.ProductTotalSum
+                    };
+
+                var reports =
+                    from sale in sales
+                    group sale by sale.SaleDate into salesByDate
+                    select new
+                    {
+                        SalesTotalSum = salesByDate.Sum(s => s.TotalSum),
+                        Sales = salesByDate
+                    };
+
+                foreach (var report in reports)
+                {
+                    foreach (var sale in report.Sales)
+                    {
+                        var cellProduct = new PdfPCell(new Phrase(sale.ProductName, new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                        cellProduct.PaddingBottom = 10f;
+                        cellProduct.PaddingLeft = 10f;
+                        cellProduct.PaddingTop = 4f;
+                        table.AddCell(cellProduct);
+
+                        var cellQuantity = new PdfPCell(new Phrase(sale.ProductQuantity.ToString(), new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                        cellQuantity.PaddingBottom = 10f;
+                        cellQuantity.PaddingLeft = 10f;
+                        cellQuantity.PaddingTop = 4f;
+                        table.AddCell(cellQuantity);
+
+                        var cell = new PdfPCell(new Phrase(sale.ProductName, new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                        cell.PaddingBottom = 10f;
+                        cell.PaddingLeft = 10f;
+                        cell.PaddingTop = 4f;
+                        table.AddCell(cell);
+
+                        /*var cell = new PdfPCell(new Phrase(sale.ProductName, new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                        cell.PaddingBottom = 10f;
+                        cell.PaddingLeft = 10f;
+                        cell.PaddingTop = 4f;
+                        table.AddCell(cell);
+
+                        var cell = new PdfPCell(new Phrase(sale.ProductName, new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                        cell.PaddingBottom = 10f;
+                        cell.PaddingLeft = 10f;
+                        cell.PaddingTop = 4f;
+                        table.AddCell(cell);*/
+                        
+                    }
+
+                    //Console.WriteLine("--------------------------------" + report.SalesTotalSum);
+                }
+
+                //using (var dbContext = new NorthwindEntities())
+                //{
+                //    string slqQuery =
+                //        "SELECT Customers.CompanyName FROM Customers JOIN " +
+                //        " Orders ON Orders.CustomerID=Customers.CustomerID " +
+                //        " WHERE Orders.ShippedDate > '01/01/1997' AND " +
+                //        "Orders.ShippedDate < '12/31/1997' AND " +
+                //        "Orders.ShipCountry = 'Canada'";
+
+                //    IEnumerable<string> customers = dbContext.Database.SqlQuery<string>(slqQuery);
+
+                //    foreach (string resultCustomer in customers)
+                //    {
+                //        var cell = new PdfPCell(new Phrase(resultCustomer, new Font(Font.HELVETICA, 12f, Font.NORMAL)));
+                //        cell.PaddingBottom = 10f;
+                //        cell.PaddingLeft = 10f;
+                //        cell.PaddingTop = 4f;
+                //        table.AddCell(resultCustomer);
+                //    }
+                //}
+
+                document.Add(table);
+
+                // Close the document
+                document.Close();
+
+                // Close the writer instance
+                writer.Close();
+
+                // Always close open filehandles explicity
+                fs.Close();
+            }
+        }
+    }
+}

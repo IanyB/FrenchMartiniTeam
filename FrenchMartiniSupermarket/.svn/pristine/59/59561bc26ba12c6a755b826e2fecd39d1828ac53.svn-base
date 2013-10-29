@@ -1,0 +1,38 @@
+﻿using System;
+using System.Linq;
+using Newtonsoft.Json.Linq;
+using System.IO;
+using EntityFrameworkModels;
+
+namespace JSONProductsReports
+{
+    public class JSONProductReports
+    {
+        public void ExtractJSON(SupermarketEntities db)
+        {
+            string folderName = @"..\..\Product-Reports";
+            DirectoryInfo dir = Directory.CreateDirectory(folderName);
+
+            var sales = from p in db.Sales select p;
+
+            foreach (var s in sales)
+            {
+                JObject jsonObject = new JObject(
+                                      new JProperty("product-id", s.ProductId),
+                                      new JProperty("product-name", s.Product.ProductName),
+                                      new JProperty("vendor-name", s.Product.Vendor),
+                                      new JProperty("total-quality-sold", s.ProductQuantity),
+                                      new JProperty("total-incomes", s.ProductTotalSum));
+
+                string filepath = String.Format(@"..\..\Product-Reports\{0}.json", s.ProductId);
+                using (FileStream fs = File.Create(filepath))
+                {
+                    using (StreamWriter sw = new StreamWriter(fs))
+                    {
+                        sw.Write(jsonObject.ToString());
+                    }
+                }
+            }
+        }
+    }
+}

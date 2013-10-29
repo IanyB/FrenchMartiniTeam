@@ -1,0 +1,48 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
+
+namespace XmlLib
+{
+    public static class Reader
+    {
+        /// <summary>
+        /// Method for extracting expenses reports in XML format
+        /// </summary>
+        /// <param name="filePath">Filepath for the .xml file</param>
+        public static LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>>
+            ReadExpenses(string filePath)
+        {
+            XmlReader reader = XmlReader.Create(filePath);
+
+            LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>> expenses =
+                new LinkedList<KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>>();
+
+            using (reader)
+            {
+                while (reader.Read())
+                {
+                    //Insert a new vendor
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "sale")
+                    {
+                        expenses.AddFirst(
+                            new KeyValuePair<string, LinkedList<KeyValuePair<string, decimal>>>(
+                                reader.GetAttribute("vendor"),
+                                new LinkedList<KeyValuePair<string, decimal>>()));
+                    }
+
+                    //Insert Expenses
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "expenses")
+                    {
+                        expenses.First.Value.Value.AddFirst(
+                            new KeyValuePair<string, decimal>(reader.GetAttribute("month"),
+                                reader.ReadElementContentAsDecimal()));
+                    }
+                }
+            }
+
+            return expenses;
+        }
+    }
+}

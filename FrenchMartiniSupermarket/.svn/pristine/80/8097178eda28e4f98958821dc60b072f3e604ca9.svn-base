@@ -1,0 +1,55 @@
+﻿using System;
+using System.Linq;
+using System.IO;
+using EntityFrameworkModels;
+using JSONProductReports;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+
+namespace JSONProductsReports
+{
+    public class JSONProductReports
+    {
+        public void ExtractJSON(SupermarketEntities db)
+        {
+            string folderName = @"..\..\Product-Reports";
+            DirectoryInfo dir = Directory.CreateDirectory(folderName);
+            List<ProductReport> productsReports = new List<ProductReport>();
+            InsertInMongoDB<ProductReport> mongo = new InsertInMongoDB<ProductReport>();
+
+            var sales = from s in db.Sales select s;
+
+            foreach (var s in sales)
+            {
+                JObject jsonObject = new JObject(
+                                      new JProperty("product-id", s.ProductId),
+                                      new JProperty("product-name", s.Product.ProductName),
+                                      new JProperty("vendor-name", s.Product.Vendor),
+                                      new JProperty("total-quality-sold", s.ProductQuantity),
+                                      new JProperty("total-incomes", s.ProductTotalSum));
+
+                string filepath = String.Format(@"..\..\Product-Reports\{0}.json", s.ProductId);
+                using (FileStream fs = File.Create(filepath))
+                {
+                    using (StreamWriter sw = new StreamWriter(fs))
+                    {
+                        sw.Write(jsonObject.ToString());
+                    }
+                }
+
+                ProductReport currentReport = new ProductReport
+                {
+                    ProductId = s.ProductId,
+                    ProductName = s.Product.ProductName,
+                    VendorName = s.Product.Vendor.ToString(),
+                    TotalQuantitySold = s.ProductQuantity,
+                    TotalIncomes = s.ProductTotalSum
+                };
+
+                productsReports.Add(currentReport);
+            }
+
+            mongo.InsertMongoDB(productsReports, "ProductsReportsDataBase");
+        }
+    }
+}
